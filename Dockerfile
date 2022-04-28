@@ -3,7 +3,9 @@ FROM python:3.10.4
 RUN apt-get update -qq && apt-get install -y \
     iputils-ping
 
-WORKDIR /tmp/build
-COPY requirements.txt requirements.txt
+RUN pip install Pillow
+RUN pip install pandas
+RUN pip install pysimplegui
+RUN pip install black
 
-RUN pip install -r requirements.txt
+ENV PYTHONPATH=/workspaces/pregananant/modules:$PYTHONPATH
