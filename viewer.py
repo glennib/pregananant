@@ -1,142 +1,62 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
 import io
-import random
-import string
+from typing import Dict, List
 import PySimpleGUI as sg
 import pandas as pd
+import json
+import os
+import aux
+from pprint import pformat, pprint
 
-import os.path
-
-from PIL import Image
-
-
-class Test:
-    def __str__(self) -> str:
-        return "str"
-
-    def __repr__(self) -> str:
-        return "repr"
+METADATA_PATH = "./metadata.json"
+IMG_DIR = "./imgs"
 
 
-def word():
-    return "".join(random.choice(string.ascii_lowercase) for i in range(10))
+def image_files(dir):
+    filenames = [
+        os.path.join(dir, f)
+        for f in os.listdir(dir)
+        if os.path.isfile(os.path.join(dir, f))
+        and f.lower().endswith((".png", ".jpeg", ".jpg"))
+    ]
+
+    return filenames
 
 
-def number(max_val=1000):
-    return random.randint(0, max_val)
+def populate_annotations(annotations, filenames):
+    for f in filenames:
+        annotation = next(
+            (a for a in annotations if "filename" in a and a["filename"] == f), None
+        )
+        if annotation is None:
+            annotation = {
+                "filename": f,
+            }
+            annotations.append(annotation)
 
 
-headers = {
-    "Integers": [
-        1,
-        2,
-    ],
-    "Strings": ["abc", "def"],
-    "Normalized Floats": [3.14, 5.18],
-}
-table = pd.DataFrame(headers)
-headings = list(headers)
-values = table.values.tolist()
-
-# ------ Make the Table Data ------
-
+def get_headers(annotations: List[Dict]):
+    headers = set()
+    for a in annotations:
+        headers.update(a.keys())
+    return headers
 
 
 if __name__ == "__main__":
-    # First the window layout in 2 columns
-    file_list_column = [
-        [
-            sg.Text("Image Folder"),
-            sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"),
-            sg.FolderBrowse(),
-        ],
-        [
-            sg.Listbox(
-                values=[{"a": "b", "c": "d"}, ["jkl"], Test()],
-                enable_events=True,
-                size=(40, 20),
-                key="-FILE LIST-",
-            )
-        ],
-    ]
-    # For now will only show the name of the file that was chosen
+    with open(METADATA_PATH, "r") as f:
+        meta = json.load(f)
+    annotations: List[Dict] = meta["annotations"]
 
-    image_viewer_column = [
-        [sg.Text("Choose an image from list on left:")],
-        [sg.Text(size=(40, 1), key="-TOUT-")],
-        [sg.Image(key="-IMAGE-")],
-    ]
-    # ----- Full layout -----
+    filenames = image_files(IMG_DIR)
 
-    layout = [
-        [
-            sg.Column(file_list_column),
-            sg.VSeperator(),
-            sg.Column(image_viewer_column),
-            sg.VSeperator(),
-            sg.Column(
-                [
-                    [
-                        sg.Table(
-                            values=values,
-                            headings=headings,
-                            auto_size_columns=False,
-                            col_widths=list(map(lambda x: len(x) + 1, headings)),
-                        )
-                    ]
-                ]
-            ),
-        ]
-    ]
-    window = sg.Window("Image Viewer", layout)
-    while True:
-        event, values = window.read()
-        print(f"event: {event}")
-        if event == "Exit" or event == sg.WIN_CLOSED:
-            break
+    pprint(filenames)
 
-        # Folder name was filled in, make a list of files in the folder
-        if event == "-FOLDER-":
-            print("in folder event")
-            folder = values["-FOLDER-"]
-            print(folder)
-            try:
-                # Get list of files in folder
-                print("Getting listdir")
-                file_list = os.listdir(folder)
-            except Exception as e:
-                print("Got exception...")
-                print(e)
-                file_list = []
+    populate_annotations(annotations, filenames)
 
-            print(file_list)
+    headers = get_headers(annotations)
 
-            fnames = [
-                f
-                for f in file_list
-                if os.path.isfile(os.path.join(folder, f))
-                and f.lower().endswith((".png", ".gif", ".jpg"))
-            ]
+    print(headers)
 
-            window["-FILE LIST-"].update(fnames)
-        elif event == "-FILE LIST-":  # A file was chosen from the listbox
-            print("in file list event")
-            try:
-                print(values["-FILE LIST-"])
-                filename = os.path.join(values["-FOLDER-"], values["-FILE LIST-"][0])
-                window["-TOUT-"].update(filename)
-                if filename.lower().endswith((".jpg")):
-                    pil_image = Image.open(filename)
-                    png_bio = io.BytesIO()
-                    pil_image.save(png_bio, format="PNG")
-                    png_data = png_bio.getvalue()
-                    window["-IMAGE-"].update(data=png_data)
-                else:
-                    window["-IMAGE-"].update(filename=filename)
-            except:
-                pass
-        else:
-            print("Unknown event!")
-
-    window.close()
+    with open(METADATA_PATH, "w") as f:
+        json.dump(meta, f, indent=4, sort_keys=True)
