@@ -6,7 +6,7 @@ import PySimpleGUI as sg
 import pandas as pd
 import json
 import os
-import aux
+import helpers
 from pprint import pformat, pprint
 
 METADATA_PATH = "./metadata.json"
