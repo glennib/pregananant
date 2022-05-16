@@ -1,67 +1,104 @@
 #!/usr/bin/env python3
 
 import io
-from typing import Dict, List
+import pathlib as pl
+from typing import Any, Dict, List, Optional
+from pathlib import Path
 import PySimpleGUI as sg
 import pandas as pd
 import json
-import os
 import helpers
 from pprint import pformat, pprint
 
-METADATA_PATH = "./metadata.json"
-IMG_DIR = "./imgs"
+METADATA_PATH = Path("./metadata.json")
+IMG_DIR = pl.Path("./imgs")
 
 
-def image_files(dir):
+def image_files(dir: Path) -> List[Path]:
     filenames = [
-        os.path.join(dir, f)
-        for f in os.listdir(dir)
-        if os.path.isfile(os.path.join(dir, f))
-        and f.lower().endswith((".png", ".jpeg", ".jpg"))
+        dir / f
+        for f in dir.iterdir()
+        if (dir / f).is_file()
+        and f.suffix.lower().endswith((".png", ".jpeg", ".jpg"))
     ]
-
     return filenames
 
 
-def populate_annotations(annotations, filenames):
+def populate_annotations(annotations, filenames: List[Path]):
     for f in filenames:
         # Check if filename exists in the annotations list
-        annotation = next(
-            (a for a in annotations if "filename" in a and a["filename"] == f), None
+        annotation: Optional[Dict] = next(
+            (
+                a
+                for a in annotations
+                if "filename" in a and a["filename"] == f.as_posix()
+            ),
+            None,
         )
         # If it isn't, create an entry
         if annotation is None:
             annotation = {
-                "filename": f,
+                "filename": f.as_posix(),
             }
             annotations.append(annotation)
+        if "included" not in annotation:
+            annotation["included"] = True
 
 
 def get_headers(annotations: List[Dict]):
     headers = set()
     for a in annotations:
         headers.update(a.keys())
-    return headers
+    return list(headers)
+
+
+def load(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        with path.open("w+") as f:
+            json.dump({}, f)
+    with path.open("r") as f:
+        meta = json.load(f)
+    return meta
+
+
+def dump(meta: Dict[str, Any], path: Path):
+    with path.open("w") as f:
+        json.dump(meta, f, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
-    with open(METADATA_PATH, "r") as f:
-        meta = json.load(f)
+    meta = load(METADATA_PATH)
 
     if "annotations" not in meta:
         meta["annotations"] = []
-    annotations: List[Dict] = meta["annotations"]
+    annotations: List[Dict[str, Any]] = meta["annotations"]
 
     filenames = image_files(IMG_DIR)
-
-    pprint(filenames)
-
     populate_annotations(annotations, filenames)
 
-    headers = get_headers(annotations)
+    dump(meta, METADATA_PATH)
 
-    print(headers)
+    # headers = get_headers(annotations)
+    table = pd.DataFrame(annotations)
+    table_headers = list(table.columns)
+    table_values = table.values.tolist()
+    # pprint(table_values)
 
-    with open(METADATA_PATH, "w") as f:
-        json.dump(meta, f, indent=4, sort_keys=True)
+    pprint(table_headers)
+
+    # exit(0)
+
+    # print(table)
+
+    file_table_column = [[sg.Table(headings=table_headers, values=table_values)]]
+
+    layout = [[sg.Column(file_table_column)]]
+
+    window = sg.Window("Image Viewer", layout)
+
+    while True:
+        event, values = window.read()
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+
+    dump(meta, METADATA_PATH)
