@@ -26,9 +26,11 @@ def image_files(dir):
 
 def populate_annotations(annotations, filenames):
     for f in filenames:
+        # Check if filename exists in the annotations list
         annotation = next(
             (a for a in annotations if "filename" in a and a["filename"] == f), None
         )
+        # If it isn't, create an entry
         if annotation is None:
             annotation = {
                 "filename": f,
@@ -46,6 +48,9 @@ def get_headers(annotations: List[Dict]):
 if __name__ == "__main__":
     with open(METADATA_PATH, "r") as f:
         meta = json.load(f)
+
+    if "annotations" not in meta:
+        meta["annotations"] = []
     annotations: List[Dict] = meta["annotations"]
 
     filenames = image_files(IMG_DIR)
