@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import datetime
 import io
+from os import PathLike
 import pathlib as pl
 from typing import Any, Dict, List, Optional
 from pathlib import Path
@@ -16,10 +18,9 @@ IMG_DIR = pl.Path("./imgs")
 
 def image_files(dir: Path) -> List[Path]:
     filenames = [
-        dir / f
+        f
         for f in dir.iterdir()
-        if (dir / f).is_file()
-        and f.suffix.lower().endswith((".png", ".jpeg", ".jpg"))
+        if f.is_file() and f.suffix.lower().endswith((".png", ".jpeg", ".jpg"))
     ]
     return filenames
 
@@ -57,7 +58,10 @@ def load(path: Path) -> Dict[str, Any]:
         with path.open("w+") as f:
             json.dump({}, f)
     with path.open("r") as f:
-        meta = json.load(f)
+        try:
+            meta = json.load(f)
+        except json.JSONDecodeError:
+            meta = {}
     return meta
 
 
@@ -90,9 +94,26 @@ if __name__ == "__main__":
 
     # print(table)
 
-    file_table_column = [[sg.Table(headings=table_headers, values=table_values)]]
+    selection_column = []
 
-    layout = [[sg.Column(file_table_column)]]
+    for annotation in annotations:
+        fn: PathLike = annotation["filename"]
+        exif = helpers.get_exif(fn)
+        selection_column.append(
+            [
+                sg.Checkbox(fn),
+            ]
+        )
+        if "DateTime" in exif:
+            dt: datetime.datetime = exif["DateTime"]
+        else:
+            print(f"{fn} didn't have exif data DateTime, printing it all:")
+            pprint(exif)
+            continue
+        week = dt.isocalendar()[1]
+        print(f"{fn}: {week}")
+
+    layout = [[sg.Column(selection_column)]]
 
     window = sg.Window("Image Viewer", layout)
 
