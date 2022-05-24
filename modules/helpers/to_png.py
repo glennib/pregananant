@@ -8,4 +8,4 @@ def to_png(filename: PathLike):
     image = Image.open(filename)
     bytes = io.BytesIO()
     image.save(bytes, format="PNG")
-    return bytes
+    return bytes.getvalue()
