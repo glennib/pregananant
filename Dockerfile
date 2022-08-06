@@ -11,6 +11,8 @@ RUN pip install pysimplegui
 RUN pip install black
 
 RUN apt-get install -y vim
+RUN apt-get install -y fonts-open-sans
+RUN apt-get install -y tree
 
 ARG GID=1000
 ARG UID=1000
