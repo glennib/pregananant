@@ -10,6 +10,8 @@ RUN pip install pandas
 RUN pip install pysimplegui
 RUN pip install black
 
+RUN apt-get install -y vim
+
 ARG GID=1000
 ARG UID=1000
 
