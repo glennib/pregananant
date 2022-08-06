@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, Any
 import json
 
+
 def load(path: Path) -> Dict[str, Any]:
     if not path.exists():
         print(f"json file at {path} didn't exist, creating new with empty dict")
