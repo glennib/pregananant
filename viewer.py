@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 
 import datetime
-import io
 from os import PathLike
-from re import S
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
 import PySimpleGUI as sg
-import pandas as pd
-import json
 import helpers
-from pprint import pformat, pprint
-from helpers.create_thumbnail import create_thumbnail
-
-from helpers.to_png import to_png
+from pprint import pprint
+from helpers import create_thumbnail
+from helpers import load, dump
+from helpers import to_png
 
 METADATA_PATH = Path("./metadata.json")
 IMG_DIR = Path("./imgs")
@@ -151,28 +147,6 @@ def delete_non_included(annotations: List[Dict[str, Any]]):
     delete_indices.reverse()
     for i in delete_indices:
         del annotations[i]
-
-
-def load(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        print(f"json file at {path} didn't exist, creating new with empty dict")
-        with path.open("w+") as f:
-            json.dump({"annotations": []}, f)
-    with path.open("r") as f:
-        try:
-            print(f"json file at {path} exists, loading")
-            meta = json.load(f)
-            print(f"Loaded {len(meta['annotations'])} annotations")
-        except json.JSONDecodeError:
-            meta = {}
-            print(f"Couldn't decode {path} as json, overwriting and loading empty dict")
-    return meta
-
-
-def dump(meta: Dict[str, Any], path: Path):
-    with path.open("w") as f:
-        json.dump(meta, f, indent=4, sort_keys=True)
-    print(f"Dumped {len(meta['annotations'])} annotations")
 
 
 def get_suffix(s: str) -> int:
