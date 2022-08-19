@@ -17,7 +17,7 @@ THUMB_DIR = IMG_DIR / "thumb"
 EXPECTED_END_DATE = datetime.datetime(2022, 8, 1)
 EXPECTED_DURATION = datetime.timedelta(weeks=40, days=3)
 START_DATE = EXPECTED_END_DATE - EXPECTED_DURATION
-DATETIME_FORMAT_STRING = "%Y-%m-%d %H:%M:%S"
+DATETIME_FORMAT_STRING = r"%Y-%m-%d %H:%M:%S"
 JPEG_SUFFIXES = (".jpg", ".jpeg")
 ADJUST_TO_WEEKDAY = 0
 
