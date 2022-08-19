@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
-from pprint import pprint
+from typing import Dict, List, Tuple
 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
+
+# from multiprocessing import Pool
 
 IMAGES_DIR = Path("./edited_imgs")
 VIDEOS_DIR = Path("./videos")
 
-MAX_VIDEO_LENGTH = 60.0
+MAX_VIDEO_LENGTH = 56.0
 MAX_WEEK_LENGTH = 2.0
 MIN_PIC_LENGTH = 0.3
 MAX_PIC_LENGTH = 1.0
+BABY_WEEK_LENGTH = 3.0
+BABY_BORN_IN_WEEK = 42
 
 
-def pic_length(number_of_pictures_in_week: int) -> float:
+def pic_length(number_of_pictures_in_week: int, is_baby: bool) -> float:
+    if is_baby:
+        return BABY_WEEK_LENGTH / number_of_pictures_in_week
     length = MAX_WEEK_LENGTH / number_of_pictures_in_week
     length = min(MAX_PIC_LENGTH, length)
     length = max(MIN_PIC_LENGTH, length)
@@ -33,6 +38,12 @@ def delete_all_files(dir: Path):
     for file in dir.iterdir():
         if file.is_file():
             file.unlink()
+
+
+def write_video_file(images_fps_filename: Tuple[List[str], float, str]) -> None:
+    images, fps, filename = images_fps_filename
+    clip = ImageSequenceClip(images, fps=fps)
+    clip.write_videofile(filename)
 
 
 def main():
@@ -80,7 +91,7 @@ def main():
         assert max_number == len(numbers)
         for number in numbers:
             key = week, number
-            length = pic_length(max_number)
+            length = pic_length(max_number, week >= BABY_BORN_IN_WEEK)
             image_lengths[key] = length
             total_length += length
             paths[key] = week_paths[number]
@@ -88,8 +99,11 @@ def main():
 
     if total_length > MAX_VIDEO_LENGTH or True:
         ratio = MAX_VIDEO_LENGTH / total_length
+        print(f"Multiplying image lengths with {ratio*100:.1f}%")
         for key in keys:
             image_lengths[key] *= ratio
+
+    list_of_images_fps_filename: List[Tuple[List[str], float, str]] = []
 
     for week in weeks:
         week_paths = image_paths[week]
@@ -98,12 +112,22 @@ def main():
         length_per_image = image_lengths[(week, 1)]
         length_of_week = number_of_images * length_per_image
         fps = number_of_images / length_of_week
-        images: List[Path] = []
+        images: List[str] = []
         for number in numbers:
             key = week, number
             images.append(paths[key].as_posix())
-        clip = ImageSequenceClip(images, fps=fps)
-        clip.write_videofile(f"{(VIDEOS_DIR / f'{week:02}.mp4')}")
+        filename = f"{(VIDEOS_DIR / f'{week:02}.mp4')}"
+
+        list_of_images_fps_filename.append((images, fps, filename))
+
+    print(f"Writing {len(list_of_images_fps_filename)} videos...")
+
+    _ = list(map(write_video_file, list_of_images_fps_filename))
+
+    # pool = Pool()
+    # pool.imap_unordered(write_video_file, list_of_images_fps_filename, chunksize=2)
+
+    print("Done!")
 
 
 if __name__ == "__main__":

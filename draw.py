@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import Dict, List, Any
 from helpers import load, normalized
-from pprint import pprint
 from PIL import Image, ImageFont, ImageDraw
 import moviepy as mp
 
@@ -39,7 +38,7 @@ def filename(annotation: Dict[str, Any], image_number_in_week: int) -> str:
 def create_image(annotation: Dict[str, Any], dir: Path, image_number_in_week: int):
     original_path = Path(annotation["filename"])
     target_path = dir / filename(annotation, image_number_in_week)
-    week = annotation["pregnancy_week"]
+    week: int = annotation["pregnancy_week"]
 
     print(f"processing {target_path}")
 
@@ -47,7 +46,10 @@ def create_image(annotation: Dict[str, Any], dir: Path, image_number_in_week: in
     size = 500
     font = ImageFont.truetype("OpenSans-Regular.ttf", size)
     drawable = ImageDraw.Draw(image)
-    text = f"{week:2}"
+    if week < 43:
+        text = f"{week:2}"
+    else:
+        text = "BABY"
     drawable.text(
         from_ratio(0.5, 0.0, image),
         text,
@@ -90,8 +92,6 @@ def main():
     for week, annotations in annotations_by_week.items():
         for image_number, annotation in enumerate(annotations, 1):
             create_image(annotation, OUT_DIR, image_number)
-            # break
-        # break
 
 
 if __name__ == "__main__":
