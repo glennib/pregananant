@@ -1,20 +1,21 @@
 FROM python:3.10.4
 
-RUN apt-get update -qq
-RUN apt-get install -y iputils-ping iproute2
-RUN apt-get install -y sudo
+RUN apt-get update -qq \
+    && apt-get install -y -qq \
+        iputils-ping \
+        iproute2 \
+        sudo \
+        vim \
+        fonts-open-sans \
+        tree \
+    && apt-get clean -qq
 
-
-RUN pip install Pillow
-RUN pip install pandas
-RUN pip install pysimplegui
-RUN pip install black
-
-RUN apt-get install -y vim
-RUN apt-get install -y fonts-open-sans
-RUN apt-get install -y tree
-
-RUN pip install moviepy
+RUN pip install \
+    Pillow \
+    pandas \
+    pysimplegui \
+    black \
+    moviepy
 
 ARG GID=1000
 ARG UID=1000
